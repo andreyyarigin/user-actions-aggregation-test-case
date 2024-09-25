@@ -1,4 +1,4 @@
-# user-actions-aggregation-test-case
+# User-Actions-Aggregation
 
 ## Описание проекта
 Приложение для пакетной обработки потока данных и вычисления агрегированных показателей на временном окне 7 дней. 
@@ -12,6 +12,13 @@
 - `action` (один из: CREATE, READ, UPDATE, DELETE)
 - `dt` (дата и время)
 
+| email               | action | dt                  |
+|---------------------|--------|---------------------|
+| rAKOlO@gmail.com     | DELETE | 2024-09-10 01:38:01 |
+| WSbGEouWSRK@ya.ru    | CREATE | 2024-09-10 14:15:10 |
+| qeRSs@gmail.com      | CREATE | 2024-09-10 19:38:43 |
+| DWYlWGvum@gmail.com  | CREATE | 2024-09-10 22:27:43 |
+
 Для генерации входных данных использован [скрипт](https://github.com/andreyyarigin/user-actions-aggregation-test-case/blob/main/scripts/generate_sample_data.py)
 
 ## Сценарий использования
@@ -24,8 +31,38 @@
 - `update_count` 
 - `delete_count`
 
+| email               | create_count | read_count | update_count | delete_count |
+|---------------------|--------------|------------|--------------|--------------|
+| DWYlWGvum@gmail.com  | 300          | 352        | 371          | 351          |
+| rAKOlO@gmail.com     | 400          | 337        | 322          | 347          |
+| WSbGEouWSRK@ya.ru    | 362          | 337        | 385          | 349          |
+| aRrtQbOU@ya.ru       | 378          | 350        | 342          | 347          |
+| qeRSs@gmail.com      | 370          | 366        | 340          | 346          |
+
+
 Итоговый файл сохраняется в директорию `output` с именованием по правилу `YYYY-mm-dd.csv`. Например, если вычисление агрегата выполняется за 2024-09-16, то данные за период с 2024-09-09 по 2024-09-15 будут использованы, и результат будет записан в `output/2024-09-16.csv`.
 
 ## Реализованная функциональность
 - Развернут Apache Airflow с одним DAG, который запускает вычисление недельного агрегата каждый день в 7:00.
 - В качестве входных и выходных директорий используются директории на хост-машине, которые замонтированы в контейнер Spark
+
+## Комментарии к структуре проекта
+
+.
+├── README.MD
+├── docker-compose.yaml
+├── spark_agg_dockerfile  # Каталог с файлами для сборки Docker-образа Spark
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── spark_agg_script.py  # Скрипт для выполнения агрегации данных в Spark
+├── dags
+│   └── agg_dag.py  # DAG для Airflow (монтирует папки и запускает DockerOperator)
+├── input  # Входные данные в формате CSV (логи CRUD операций)
+│   ├── 2024-09-10.csv
+│   ├── ...
+│   └── 2024-10-09.csv
+├── spark_output_tmp  # Временная директория для промежуточных результатов Spark (очищается после сохранения итогового файла)
+├── output # Папка для сохранения итогового результата в формате <YYYY-MM-DD>.csv 
+└── scripts
+    ├── agg_script.py  # Базовый скрипт для выполнения аналогичной агрегации посредством Pandas
+    └── generate_sample_data.py  # Скрипт для генерации тестовых входных данных (результат сохранен в /input)
